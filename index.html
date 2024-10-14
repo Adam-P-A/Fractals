@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fractal Tree Generator</title>
+    <style>
+        canvas {
+            border: 1px solid black;
+            display: block;
+            margin: 20px auto;
+        }
+        .controls {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 18px;
+        }
+        label, input, button, select {
+            margin: 10px;
+            padding: 5px;
+        }
+        button, select {
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .slider-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+        }
+        .slider-container label {
+            margin: 0;
+        }
+        .slider-container input {
+            width: 150px;
+        }
+    </style>
+</head>
+<body>
+
+<canvas id="fractalCanvas" width="800" height="600"></canvas>
+
+<div class="controls">
+    <label for="iterations">Iterations: </label>
+    <input type="number" id="iterations" value="8" style="width: 60px;">
+    
+    <label for="angle">Branching Angle: </label>
+    <input type="number" id="angle" value="30" style="width: 60px;">
+    
+    <label for="fractalType">Fractal Type: </label>
+    <select id="fractalType">
+        <option value="1">Variant 1: Two angled + Straight</option>
+        <option value="2">Variant 2: One straight + Two angled</option>
+        <option value="3">Variant 3: Alternating angled</option>
+        <option value="4">Variant 4: Symmetric mirrored</option>
+        <option value="5">Variant 5: Random angled</option>
+    </select>
+    
+    <button onclick="drawFractal()">Draw Tree</button>
+    
+    <div class="slider-container">
+        <label for="baseThickness">Base Thickness: </label>
+        <input type="range" id="baseThickness" min="1" max="20" value="10">
+        
+        <label for="thicknessVariation">Thickness Variation: </label>
+        <input type="range" id="thicknessVariation" min="0" max="100" value="100">
+    </div>
+
+    <!-- Animation Controls -->
+    <label for="animationType">Animation Type: </label>
+    <select id="animationType">
+        <option value="linear">Linear</option>
+        <option value="bezier">Bezier</option>
+    </select>
+    
+    <label for="animationDuration">Animation Duration (sec): </label>
+    <input type="range" id="animationDuration" min="2" max="300" value="60">
+    <span id="durationDisplay">60</span> seconds
+    
+    <button onclick="startAnimation()">Animate</button>
+</div>
+
+<script>
+document.getElementById('animationDuration').addEventListener('input', function() {
+    document.getElementById('durationDisplay').innerText = this.value;
+});
+
+// Function to draw fractal tree on canvas
+function drawFractal(branchingAngle = null) {
+    const canvas = document.getElementById('fractalCanvas');
+    const ctx = canvas.getContext('2d');
+    
+    // Clear previous tree
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    const iterations = parseInt(document.getElementById('iterations').value);
+    const angleInput = branchingAngle === null ? parseFloat(document.getElementById('angle').value) : branchingAngle;
+    const fractalType = document.getElementById('fractalType').value;
+    const baseThickness = parseFloat(document.getElementById('baseThickness').value);
+    const thicknessVariation = parseFloat(document.getElementById('thicknessVariation').value) / 100;
+
+    const startX = canvas.width / 2;
+    const startY = canvas.height - 50; // Bottom of canvas
+    const startLength = 120; // Length of initial trunk
+    const startAngle = -90;  // Upward direction
+
+    // Recursive function to draw branches based on the selected fractal type
+    function drawBranch(x, y, length, angle, depth) {
+        if (depth === 0) return;
+
+        // Calculate end point of branch
+        const xEnd = x + length * Math.cos(angle * Math.PI / 180);
+        const yEnd = y + length * Math.sin(angle * Math.PI / 180);
+
+        // Calculate line thickness
+        const currentThickness = baseThickness * (1 - thicknessVariation + thicknessVariation * (depth / iterations));
+
+        // Draw branch line
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineTo(xEnd, yEnd);
+        ctx.strokeStyle = 'brown';
+        ctx.lineWidth = currentThickness;
+        ctx.stroke();
+
+        // Recursive calls based on fractal type
+        switch (fractalType) {
+            case '1': // Variant 1: Two angled branches and a straight branch
+                drawBranch(xEnd, yEnd, length * 0.67, angle - angleInput, depth - 1);
+                drawBranch(xEnd, yEnd, length * 0.67, angle + angleInput, depth - 1);
+                drawBranch(xEnd, yEnd, length * 0.67, angle, depth - 1);
+                break;
+            case '2': // Variant 2: One straight branch followed by two angled branches
+                if (depth % 2 === 0) {
+                    drawBranch(xEnd, yEnd, length * 0.67, angle - angleInput, depth - 1);
+                    drawBranch(xEnd, yEnd, length * 0.67, angle + angleInput, depth - 1);
+                } else {
+                    drawBranch(xEnd, yEnd, length * 0.67, angle, depth - 1);
+                }
+                break;
+            case '3': // Variant 3: Alternating angled branches
+                if (depth % 2 === 0) {
+                    drawBranch(xEnd, yEnd, length * 0.67, angle + angleInput, depth - 1);
+                } else {
+                    drawBranch(xEnd, yEnd, length * 0.67, angle - angleInput, depth - 1);
+                }
+                break;
+            case '4': // Variant 4: Symmetric mirrored branches
+                drawBranch(xEnd, yEnd, length * 0.67, angle - angleInput, depth - 1);
+                drawBranch(xEnd, yEnd, length * 0.67, angle + angleInput, depth - 1);
+                break;
+            case '5': // Variant 5: Randomly angled branches
+                const randomAngle1 = angleInput * (Math.random() - 0.5) * 2;
+                const randomAngle2 = angleInput * (Math.random() - 0.5) * 2;
+                drawBranch(xEnd, yEnd, length * 0.67, angle + randomAngle1, depth - 1);
+                drawBranch(xEnd, yEnd, length * 0.67, angle + randomAngle2, depth - 1);
+                break;
+        }
+    }
+
+    // Start drawing from the trunk
+    drawBranch(startX, startY, startLength, startAngle, iterations);
+}
+
+// Function to create a linear interpolation between two values
+function lerp(start, end, t) {
+    return start + t * (end - start);
+}
+
+// Function to create a Bezier easing effect
+function easeInOutQuad(t) {
+    return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+}
+
+// Function to animate the fractal tree
+function startAnimation() {
+    const canvas = document.getElementById('fractalCanvas');
+    const ctx = canvas.getContext('2d');
+    const angleStart = parseFloat(document.getElementById('angle').value);
+    const animationType = document.getElementById('animationType').value;
+    const duration = parseInt(document.getElementById('animationDuration').value) * 1000;
+
+    const startTime = performance.now();
+
+    function animate(timestamp) {
+        const elapsed = timestamp - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+
+        // Use linear or bezier easing based on user selection
+        const easingFunction = animationType === 'linear' ? lerp : easeInOutQuad;
+        const currentAngle = easingFunction(angleStart, 360, progress);
+
+        // Redraw the fractal tree with the current branching angle
+        drawFractal(currentAngle);
+
+        if (progress < 1) {
+            requestAnimationFrame(animate);
+        }
+    }
+
+    requestAnimationFrame(animate);
+}
+
+</script>
+
+</body>
+</html>
